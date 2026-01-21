@@ -4,3 +4,6 @@
 data.csv
 node_modules/
 .gemini/
+.env
+.env.local
+.env.production
