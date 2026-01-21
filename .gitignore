@@ -1,0 +1,6 @@
+.DS_Store
+*.backup*
+*.py
+data.csv
+node_modules/
+.gemini/

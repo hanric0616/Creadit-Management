@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="企業授信風險評估系統 - 快速查看客戶財務數據">
+    <title>授信風險評估系統 | Credit Risk Assessment</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- SheetJS for Excel reading -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <link rel="stylesheet" href="style.css?v=2.2">
+    <script src="config.js?v=1.3"></script>
+
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">授信風險評估系統</h1>
+                <p class="subtitle">Credit Risk Assessment Platform</p>
+            </div>
+        </header>
+
+        <!-- Company Selector -->
+        <section class="selector-section">
+            <div class="selector-card">
+                <label for="company-search" class="selector-label">選擇客戶 / Select Customer</label>
+                <div class="search-wrapper">
+                    <input type="text" id="company-search" class="company-input" placeholder="輸入公司名稱或股票代號..."
+                        autocomplete="off">
+                    <button id="clear-search" class="clear-btn" title="清除搜尋">✕</button>
+                    <div id="suggestions" class="suggestions-dropdown"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AML Anti-Money Laundering Detection -->
+        <section id="aml-section" class="aml-section hidden">
+            <div class="aml-card">
+                <h2 class="section-title">🛡️ AML 檢測 (Anti-Money Laundering)</h2>
+                <div class="aml-content" id="aml-content">
+                    <div class="aml-loading">
+                        <div class="loading-spinner"></div>
+                        <p>正在搜尋相關新聞並分析風險...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Financial Charts -->
+        <section id="charts-section" class="charts-section hidden">
+            <div class="section-header">
+                <h2 class="section-title" id="company-title">財務比率分析 Financial Ratios Analysis</h2>
+            </div>
+
+            <div class="charts-grid">
+                <!-- 短期借款 -->
+                <div class="chart-card">
+                    <h3 class="chart-title">短期借款 (仟元)</h3>
+                    <div class="chart-average" id="avg-std">平均值: --</div>
+                    <canvas id="chart-std"></canvas>
+                </div>
+
+                <!-- 一年內到期長期負債 -->
+                <div class="chart-card">
+                    <h3 class="chart-title">一年內到期長期負債 (仟元)</h3>
+                    <div class="chart-average" id="avg-cpltd">平均值: --</div>
+                    <canvas id="chart-cpltd"></canvas>
+                </div>
+
+                <!-- 長期負債 -->
+                <div class="chart-card">
+                    <h3 class="chart-title">長期負債 (仟元)</h3>
+                    <div class="chart-average" id="avg-ltd">平均值: --</div>
+                    <canvas id="chart-ltd"></canvas>
+                </div>
+
+                <!-- EBITDA -->
+                <div class="chart-card">
+                    <h3 class="chart-title">EBITDA (仟元)</h3>
+                    <div class="chart-average" id="avg-ebitda">平均值: --</div>
+                    <canvas id="chart-ebitda"></canvas>
+                </div>
+
+                <!-- 營收淨額 -->
+                <div class="chart-card">
+                    <h3 class="chart-title">營收淨額 (仟元)</h3>
+                    <div class="chart-average" id="avg-sales">平均值: --</div>
+                    <canvas id="chart-sales"></canvas>
+                </div>
+
+                <!-- 自由現金流量 -->
+                <div class="chart-card">
+                    <h3 class="chart-title">自由現金流量 (仟元)</h3>
+                    <div class="chart-average" id="avg-fcf">平均值: --</div>
+                    <canvas id="chart-fcf"></canvas>
+                </div>
+
+                <!-- 利息保障倍數 -->
+                <div class="chart-card">
+                    <h3 class="chart-title">利息保障倍數</h3>
+                    <div class="chart-average" id="avg-tie">平均值: --</div>
+                    <canvas id="chart-tie"></canvas>
+                </div>
+
+                <!-- 流動比率 -->
+                <div class="chart-card">
+                    <h3 class="chart-title">流動比率</h3>
+                    <div class="chart-average" id="avg-cr">平均值: --</div>
+                    <canvas id="chart-cr"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Credit Score Section -->
+        <section id="score-section" class="score-section hidden">
+            <div class="score-card">
+                <h2 class="section-title">授信評分 Credit Score</h2>
+
+                <div class="score-layout">
+                    <!-- 左側：大型分數卡片 -->
+                    <div class="score-left">
+                        <div class="score-main">
+                            <div class="score-value" id="total-score">--</div>
+                            <div class="score-label">總分 / 100</div>
+                            <div class="score-grade" id="score-grade">--</div>
+                        </div>
+                    </div>
+
+                    <!-- 右側：AI評語 + 細項評分 -->
+                    <div class="score-right">
+                        <!-- AI評語區塊 -->
+                        <div class="ai-comment" id="ai-comment">
+                            <div class="ai-icon">🤖</div>
+                            <div class="ai-text" id="ai-comment-text">AI分析中，請稍候...</div>
+                        </div>
+
+                        <!-- 細項評分網格 (2行4列) -->
+                        <div class="score-breakdown">
+                            <div class="score-item">
+                                <span class="score-item-label">償債年限</span>
+                                <span class="score-item-value" id="score-debt-ebitda">-- / 20</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-item-label">EBITDA穩定性</span>
+                                <span class="score-item-value" id="score-ebitda-std">-- / 20</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-item-label">現金流償債能力</span>
+                                <span class="score-item-value" id="score-fcf-debt">-- / 20</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-item-label">利息保障倍數</span>
+                                <span class="score-item-value" id="score-tie">-- / 10</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-item-label">資本支出效率</span>
+                                <span class="score-item-value" id="score-capex">-- / 10</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-item-label">流動比率</span>
+                                <span class="score-item-value" id="score-cr">-- / 5</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-item-label">營收成長穩定性</span>
+                                <span class="score-item-value" id="score-sales-std">-- / 5</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-item-label">短期債務結構</span>
+                                <span class="score-item-value" id="score-std-assets">-- / 10</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js?v=2.1"></script>
+</body>
+
+</html>
