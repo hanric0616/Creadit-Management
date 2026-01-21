@@ -144,6 +144,38 @@ function setupEventListeners() {
             suggestionsBox.classList.remove('show');
         }
     });
+
+    // Settings Modal Listeners
+    const settingsModal = document.getElementById('settings-modal');
+    const openSettingsBtn = document.getElementById('open-settings');
+    const closeSettingsBtn = document.getElementById('close-settings');
+    const saveSettingsBtn = document.getElementById('save-settings');
+
+    const geminiInput = document.getElementById('gemini-key');
+    const newsInput = document.getElementById('news-key');
+
+    openSettingsBtn.addEventListener('click', () => {
+        geminiInput.value = localStorage.getItem('GEMINI_API_KEY') || '';
+        newsInput.value = localStorage.getItem('NEWS_API_KEY') || '';
+        settingsModal.classList.remove('hidden');
+    });
+
+    closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+    });
+
+    saveSettingsBtn.addEventListener('click', () => {
+        localStorage.setItem('GEMINI_API_KEY', geminiInput.value.trim());
+        localStorage.setItem('NEWS_API_KEY', newsInput.value.trim());
+        alert('設定已儲存！頁面將重新載入。');
+        location.reload();
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            settingsModal.classList.add('hidden');
+        }
+    });
 }
 
 function displaySuggestions(companies) {
@@ -451,6 +483,14 @@ async function calculateCreditScore(records) {
             }
         };
 
+        // 檢查 API Key
+        if (!GEMINI_API_KEY) {
+            document.getElementById('ai-comment').classList.remove('loading');
+            document.getElementById('ai-comment-text').textContent = '⚠️ 請先點擊右上角設定按鈕並輸入 Gemini API Key';
+            document.getElementById('score-grade').textContent = '未設定';
+            return;
+        }
+
         // 調用Gemini API
         const aiResponse = await callGeminiAPI(financialData);
 
@@ -623,6 +663,20 @@ async function checkAML(companyName) {
         // Step 1: 使用 News API 搜尋相關新聞
         const newsKeywords = `${companyName} (洗錢 OR 非法交易 OR 詐欺 OR 金融犯罪 OR money laundering OR fraud)`;
         const newsUrl = `${NEWS_API_URL}?q=${encodeURIComponent(newsKeywords)}&lang=zh&max=10&token=${NEWS_API_KEY}`;
+
+        // 檢查 API Key
+        if (!NEWS_API_KEY) {
+            amlContent.innerHTML = `
+                <div class="aml-result risk">
+                    <div class="aml-icon">⚠️</div>
+                    <div class="aml-text">
+                        <h3>未設定 API Key</h3>
+                        <p>請點擊右上角設定按鈕輸入 GNews API Key 以啟用 AML 檢測。</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
 
         const newsResponse = await fetch(newsUrl);
 
