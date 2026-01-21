@@ -194,7 +194,35 @@
         </section>
     </div>
 
-    <script src="app.js?v=2.1"></script>
+    <!-- 設定對話框 -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API 安全設定</h2>
+                <button id="close-settings" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="settings-hint">這些金鑰將僅儲存在您的瀏覽器中，不會上傳。請確保在公開此專案前，<code>config.js</code> 中已無硬編碼金鑰。</p>
+                <div class="form-group">
+                    <label for="gemini-key">Gemini API Key</label>
+                    <input type="password" id="gemini-key" placeholder="輸入 Google AI Studio 的 API 金鑰...">
+                    <small>用於 AI 授信評分 (Google AI Studio)</small>
+                </div>
+                <div class="form-group">
+                    <label for="news-key">GNews API Key</label>
+                    <input type="password" id="news-key" placeholder="輸入 GNews API 金鑰...">
+                    <small>用於 AML 反洗錢檢測 (GNews.io)</small>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-settings" class="save-btn">儲存設定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config.js?v=2.1"></script>
+    <script src="app.js?v=3.1"></script>
 </body>
 
 </html>
