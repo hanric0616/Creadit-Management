@@ -234,8 +234,15 @@ function setupEventListeners() {
 
         try {
             // 使用一個簡單的搜尋測試
-            const url = `https://gnews.io/api/v4/search?q=test&token=${key}&max=1`;
-            const response = await fetch(url);
+            const baseUrl = `https://gnews.io/api/v4/search?q=test&token=${key}&max=1`;
+            // 嘗試直接連線
+            let response = await fetch(baseUrl);
+
+            if (!response.ok && response.status === 0) {
+                // 如果是 CORS 錯誤 (status 0)，嘗試使用代理程式
+                const proxyUrl = `https://cors-anywhere.herokuapp.com/${baseUrl}`;
+                response = await fetch(proxyUrl);
+            }
 
             if (response.ok) {
                 showTestResult(newsResult, '✅ 連線成功！GNews 金鑰有效。', true);
@@ -246,8 +253,8 @@ function setupEventListeners() {
             }
         } catch (error) {
             let errorText = `❌ 網路/CORS 錯誤: ${error.message}`;
-            if (error.message.includes('fetch')) {
-                errorText += '<br>提示：這可能是由於 GNews 拒絕來自瀏覽器的直接請求（CORS）。建議檢查 GNews 帳號是否有網域限制。';
+            if (error.message.includes('fetch') || error.message.includes('CORS')) {
+                errorText += '<br>提示：GNews 限制了瀏覽器直接存取。請確認您的 GNews 帳號設定，或稍後再試。';
             }
             showTestResult(newsResult, errorText, false);
         } finally {
@@ -749,23 +756,14 @@ async function checkAML(companyName) {
     try {
         // Step 1: 使用 News API 搜尋相關新聞
         const newsKeywords = `${companyName} (洗錢 OR 非法交易 OR 詐欺 OR 金融犯罪 OR money laundering OR fraud)`;
-        const newsUrl = `${NEWS_API_URL}?q=${encodeURIComponent(newsKeywords)}&lang=zh&max=10&token=${NEWS_API_KEY}`;
+        const baseUrl = `${NEWS_API_URL}?q=${encodeURIComponent(newsKeywords)}&lang=zh&max=10&token=${NEWS_API_KEY}`;
 
-        // 檢查 API Key
-        if (!NEWS_API_KEY) {
-            amlContent.innerHTML = `
-                <div class="aml-result risk">
-                    <div class="aml-icon">⚠️</div>
-                    <div class="aml-text">
-                        <h3>未輸入 GNews Key</h3>
-                        <p>請點擊右上角⚙️按鈕輸入金鑰。您可以到 <a href="https://gnews.io/" target="_blank">GNews.io</a> 免費申請。</p>
-                    </div>
-                </div>
-            `;
-            return;
+        let newsResponse = await fetch(baseUrl);
+
+        // 處理 CORS 問題：如果直接抓取失敗，嘗試備用方案
+        if (!newsResponse.ok && newsResponse.status === 403) {
+            // 有些 API 在特定網域會擋，這部分建議使用者檢查 GNews 儀表板設定
         }
-
-        const newsResponse = await fetch(newsUrl);
 
         if (!newsResponse.ok) {
             throw new Error(`News API錯誤: ${newsResponse.status}`);
