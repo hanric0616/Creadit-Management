@@ -176,6 +176,93 @@ function setupEventListeners() {
             settingsModal.classList.add('hidden');
         }
     });
+
+    // Test Gemini Connection
+    const testGeminiBtn = document.getElementById('test-gemini');
+    const geminiResult = document.getElementById('gemini-test-result');
+
+    testGeminiBtn.addEventListener('click', async () => {
+        const key = geminiInput.value.trim();
+        if (!key) {
+            showTestResult(geminiResult, '請先輸入金鑰', false);
+            return;
+        }
+
+        testGeminiBtn.classList.add('loading');
+        testGeminiBtn.textContent = '測試中...';
+        showTestResult(geminiResult, '正在連線至 Google AI Studio...', 'info');
+
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${key}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
+            });
+
+            if (response.ok) {
+                showTestResult(geminiResult, '✅ 連線成功！金鑰有效。', true);
+            } else {
+                const data = await response.json();
+                const errorMsg = data.error ? data.error.message : response.statusText;
+                let advice = '';
+                if (response.status === 403) advice = '<br>提示：請確認已在 AI Studio 啟用該金鑰且無區域限制。';
+                showTestResult(geminiResult, `❌ 連線失敗 (${response.status}): ${errorMsg}${advice}`, false);
+            }
+        } catch (error) {
+            showTestResult(geminiResult, `❌ 網路錯誤: ${error.message}<br>請檢查網路連線或是否被廣告攔截器阻擋。`, false);
+        } finally {
+            testGeminiBtn.classList.remove('loading');
+            testGeminiBtn.textContent = '測試連線';
+        }
+    });
+
+    // Test News Connection
+    const testNewsBtn = document.getElementById('test-news');
+    const newsResult = document.getElementById('news-test-result');
+
+    testNewsBtn.addEventListener('click', async () => {
+        const key = newsInput.value.trim();
+        if (!key) {
+            showTestResult(newsResult, '請先輸入金鑰', false);
+            return;
+        }
+
+        testNewsBtn.classList.add('loading');
+        testNewsBtn.textContent = '測試中...';
+        showTestResult(newsResult, '正在連線至 GNews API...', 'info');
+
+        try {
+            // 使用一個簡單的搜尋測試
+            const url = `https://gnews.io/api/v4/search?q=test&token=${key}&max=1`;
+            const response = await fetch(url);
+
+            if (response.ok) {
+                showTestResult(newsResult, '✅ 連線成功！GNews 金鑰有效。', true);
+            } else {
+                const data = await response.json();
+                const errorMsg = data.errors ? data.errors.join(', ') : response.statusText;
+                showTestResult(newsResult, `❌ 連線失敗 (${response.status}): ${errorMsg}`, false);
+            }
+        } catch (error) {
+            let errorText = `❌ 網路/CORS 錯誤: ${error.message}`;
+            if (error.message.includes('fetch')) {
+                errorText += '<br>提示：這可能是由於 GNews 拒絕來自瀏覽器的直接請求（CORS）。建議檢查 GNews 帳號是否有網域限制。';
+            }
+            showTestResult(newsResult, errorText, false);
+        } finally {
+            testNewsBtn.classList.remove('loading');
+            testNewsBtn.textContent = '測試連線';
+        }
+    });
+}
+
+function showTestResult(element, message, type) {
+    element.innerHTML = message;
+    element.className = 'test-result show';
+    if (type === true) element.classList.add('success');
+    else if (type === false) element.classList.add('error');
+    else element.style.background = '#e2e8f0'; // info
 }
 
 function displaySuggestions(companies) {
@@ -486,7 +573,7 @@ async function calculateCreditScore(records) {
         // 檢查 API Key
         if (!GEMINI_API_KEY) {
             document.getElementById('ai-comment').classList.remove('loading');
-            document.getElementById('ai-comment-text').textContent = '⚠️ 請先點擊右上角設定按鈕並輸入 Gemini API Key';
+            document.getElementById('ai-comment-text').innerHTML = '⚠️ 請點擊右上角⚙️按鈕輸入 <a href="https://aistudio.google.com/" target="_blank" style="color:#fff;text-decoration:underline">Gemini API Key</a> 以啟用 AI 分析。';
             document.getElementById('score-grade').textContent = '未設定';
             return;
         }
@@ -670,8 +757,8 @@ async function checkAML(companyName) {
                 <div class="aml-result risk">
                     <div class="aml-icon">⚠️</div>
                     <div class="aml-text">
-                        <h3>未設定 API Key</h3>
-                        <p>請點擊右上角設定按鈕輸入 GNews API Key 以啟用 AML 檢測。</p>
+                        <h3>未輸入 GNews Key</h3>
+                        <p>請點擊右上角⚙️按鈕輸入金鑰。您可以到 <a href="https://gnews.io/" target="_blank">GNews.io</a> 免費申請。</p>
                     </div>
                 </div>
             `;
