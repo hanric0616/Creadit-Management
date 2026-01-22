@@ -235,14 +235,7 @@ function setupEventListeners() {
         try {
             // 使用一個簡單的搜尋測試
             const baseUrl = `https://gnews.io/api/v4/search?q=test&token=${key}&max=1`;
-            // 嘗試直接連線
-            let response = await fetch(baseUrl);
-
-            if (!response.ok && response.status === 0) {
-                // 如果是 CORS 錯誤 (status 0)，嘗試使用代理程式
-                const proxyUrl = `https://cors-anywhere.herokuapp.com/${baseUrl}`;
-                response = await fetch(proxyUrl);
-            }
+            const response = await fetch(baseUrl);
 
             if (response.ok) {
                 showTestResult(newsResult, '✅ 連線成功！GNews 金鑰有效。', true);
@@ -253,8 +246,8 @@ function setupEventListeners() {
             }
         } catch (error) {
             let errorText = `❌ 網路/CORS 錯誤: ${error.message}`;
-            if (error.message.includes('fetch') || error.message.includes('CORS')) {
-                errorText += '<br>提示：GNews 限制了瀏覽器直接存取。請確認您的 GNews 帳號設定，或稍後再試。';
+            if (error.message.includes('fetch') || error.message.includes('CORS') || error.message.includes('Unexpected token')) {
+                errorText += '<br>提示：由於 GNews 的安全限制（CORS），目前無法直接從 GitHub Pages 存取。這在本地測試 (localhost) 通常是正常的。';
             }
             showTestResult(newsResult, errorText, false);
         } finally {
